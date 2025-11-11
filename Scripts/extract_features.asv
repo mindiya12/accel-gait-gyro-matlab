@@ -1,6 +1,6 @@
 % =========================================================================
 % FEATURE EXTRACTION FOR ALL SEGMENTED DATA
-% FULLY TOOLBOX-FREE VERSION
+% Works without Statistics Toolbox (manual skewness/kurtosis)
 % =========================================================================
 
 % --- Load segmented data ---
@@ -64,13 +64,13 @@ if numFailed > 0
     fprintf('Removed failed segments. Remaining: %d\n', size(featureMatrix, 1));
 end
 
-% --- Normalize features (z-score normalization) - MANUAL IMPLEMENTATION ---
+% --- Normalize features (z-score normalization) ---
 fprintf('\nNormalizing features...\n');
-[featureMatrixNorm, mu, sigma] = zscore_manual(featureMatrix);
+[featureMatrixNorm, mu, sigma] = zscore(featureMatrix);
 
 % --- Save results ---
 fprintf('\nSaving extracted features...\n');
-save('C:\Users\E-TECH\OneDrive - NSBM\Desktop\ai ml\accel-gait-gyro-matlab\results\extracted_features.mat', ...
+save('\extracted_features.mat', ...
      'featureMatrix', 'featureMatrixNorm', 'allLabels', 'mu', 'sigma', 'numFeatures');
 
 % --- Summary ---
@@ -240,30 +240,6 @@ end
 % =========================================================================
 % HELPER FUNCTIONS - Manual implementations (no toolbox required)
 % =========================================================================
-
-function [Z, mu, sigma] = zscore_manual(X)
-    % Manual z-score normalization
-    % Z = (X - mean) / std for each column
-    % Input: X is a matrix (rows = samples, columns = features)
-    % Output: Z (normalized), mu (means), sigma (standard deviations)
-    
-    % Calculate mean for each column (feature)
-    mu = mean(X, 1);
-    
-    % Calculate standard deviation for each column
-    sigma = std(X, 0, 1);  % 0 = normalize by N-1 (sample std)
-    
-    % Normalize each column
-    Z = zeros(size(X));
-    for col = 1:size(X, 2)
-        if sigma(col) > 0
-            Z(:, col) = (X(:, col) - mu(col)) / sigma(col);
-        else
-            % If std is 0 (constant feature), keep as is
-            Z(:, col) = X(:, col) - mu(col);
-        end
-    end
-end
 
 function iqr_val = iqr_manual(x)
     % Manual IQR calculation
