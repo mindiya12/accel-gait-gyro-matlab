@@ -1,0 +1,6 @@
+size(featureMatrix)
+min(featureMatrix(:))
+max(featureMatrix(:))
+any(isnan(featureMatrix(:)))
+any(isinf(featureMatrix(:)))
+std(featureMatrix, 0, 1)
