@@ -1,7 +1,7 @@
 load('D:\src\development\accel-gait-gyro-matlab\results\extracted_features.mat');
 
 % Top 20 important features indices from your analysis
-top20_features = [121 6 8 24 123 7 9 11 13 17 21 22 25 29 31 42 45 47 55 59];
+top20_features = [32    73    13    15    17    19    22    26    56    69    71   123   132     2     6     7   12    18    48    61];
 
 fprintf('Training and evaluating model using TOP 20 features only...\n');
 
