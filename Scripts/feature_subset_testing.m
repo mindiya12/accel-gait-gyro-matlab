@@ -1,6 +1,4 @@
-load('D:\src\development\accel-gait-gyro-matlab\results\extracted_features.mat');  
-% load 'featureMatrix' and 'allLabels' into the workspace  
-
+load('D:\src\development\accel-gait-gyro-matlab\results\extracted_features.mat');
 
 feature_sets = {
     1:102,            % Time-domain features only
@@ -11,7 +9,7 @@ feature_sets = {
 };
 
 numSets = length(feature_sets);
-results = zeros(numSets, 1);  % To store EER or accuracy for each subset
+results = zeros(numSets, 1);  % To store accuracy for each subset
 
 for i = 1:numSets
     fprintf('\nTesting Feature Subset %d...\n', i);
@@ -26,19 +24,19 @@ for i = 1:numSets
     sigma(sigma==0) = 1;  % Avoid division by zero
     X_norm = (X_subset - mu) ./ sigma;
     
-    % Split data (for illustration, 80/20 random split)
+    % Split data (80/20 random split)
     cv = cvpartition(allLabels, 'HoldOut', 0.2);
     X_train = X_norm(training(cv), :);
     y_train = allLabels(training(cv));
     X_test = X_norm(test(cv), :);
     y_test = allLabels(test(cv));
     
-    % Train basic feedforward neural network (single hidden layer, 30 neurons)
-    net = patternnet(30);
+    % Create feedforward neural network with two hidden layers: 50 and 30 neurons
+    net = patternnet([50 30]);
     net.trainParam.showWindow = false;  % Hide training GUI
     net.trainParam.epochs = 200;
     
-    % Prepare data for MATLAB NN toolbox
+    % Prepare data for MATLAB NN
     X_train_t = X_train';
     y_train_onehot = full(ind2vec(y_train'));
     X_test_t = X_test';
@@ -51,7 +49,7 @@ for i = 1:numSets
     y_pred = net(X_test_t);
     y_pred_class = vec2ind(y_pred);
     
-    % Calculate accuracy as simple metric
+    % Calculate accuracy
     accuracy = sum(y_pred_class' == y_test) / length(y_test);
     fprintf(' Feature Subset %d Accuracy = %.2f%%\n', i, accuracy*100);
     

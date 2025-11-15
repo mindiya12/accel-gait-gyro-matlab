@@ -1,10 +1,7 @@
 load('D:\src\development\accel-gait-gyro-matlab\results\extracted_features.mat');
-
 fprintf('\nTesting different normalization methods...\n');
-
 norm_methods = {'zscore', 'minmax', 'robust', 'none'};
 results_norm = zeros(length(norm_methods), 1);
-
 for i = 1:length(norm_methods)
     method = norm_methods{i};
     fprintf('Method: %s\n', method);
@@ -32,15 +29,15 @@ for i = 1:length(norm_methods)
             % No normalization
     end
     
-    % Split data
+    % Split data (80% train, 20% test)
     cv = cvpartition(allLabels, 'HoldOut', 0.2);
     X_train = X_norm(training(cv), :);
     y_train = allLabels(training(cv));
     X_test = X_norm(test(cv), :);
     y_test = allLabels(test(cv));
     
-    % Train and evaluate as before
-    net = patternnet(30);
+    % Train and evaluate neural network with two hidden layers: 50 and 30 neurons
+    net = patternnet([50 30]);
     net.trainParam.showWindow = false;
     net.trainParam.epochs = 200;
     
