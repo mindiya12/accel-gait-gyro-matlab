@@ -1,0 +1,304 @@
+% =========================================================================
+% EXTRACT FEATURES FROM ALL OVERLAPPING CONFIGURATIONS
+% Uses your existing comprehensive feature extraction function
+% =========================================================================
+
+clear; clc;
+
+fprintf('=== FEATURE EXTRACTION FOR ALL OVERLAP CONFIGURATIONS ===\n\n');
+
+% --- Define configurations to process ---
+configs = {
+    'segmented_data.mat', 'FeatureMatrix_NonOverlapping.mat', 'Non-Overlapping (0%%)';
+    'segmented_data_overlap25.mat', 'FeatureMatrix_Overlap25.mat', '25%% Overlap';
+    'segmented_data_overlap50.mat', 'FeatureMatrix_Overlap50.mat', '50%% Overlap'
+};
+
+resultsFolder = 'C:\Users\Welcome\OneDrive - NSBM\Desktop\3rd_year\ai_ml\Corsework\accel-gait-gyro-matlab\results';
+
+% --- Process each configuration ---
+for configIdx = 1:size(configs, 1)
+    segmentFile = configs{configIdx, 1};
+    outputFile = configs{configIdx, 2};
+    configName = configs{configIdx, 3};
+    
+    fprintf('\n==========================================================\n');
+    fprintf('Processing: %s\n', configName);
+    fprintf('==========================================================\n');
+    
+    % Load segments
+    segmentPath = fullfile(resultsFolder, segmentFile);
+    
+    if ~exist(segmentPath, 'file')
+        warning('File not found: %s. Skipping.', segmentPath);
+        continue;
+    end
+    
+    load(segmentPath); % Loads: allSegments, allLabels
+    
+    numSegments = length(allSegments);
+    fprintf('Total segments to process: %d\n', numSegments);
+    
+    % --- Extract features from first segment to determine feature count ---
+    fprintf('Extracting features from sample segment...\n');
+    sampleFeatures = extract_features_comprehensive(allSegments{1});
+    numFeatures = length(sampleFeatures);
+    fprintf('Number of features per segment: %d\n', numFeatures);
+    
+    % --- Preallocate feature matrix for efficiency ---
+    featureMatrix = zeros(numSegments, numFeatures);
+    
+    % --- Progress tracking ---
+    fprintf('Processing all segments...\n');
+    
+    % --- Loop through all segments and extract features ---
+    successCount = 0;
+    for i = 1:numSegments
+        try
+            % Extract features from current segment
+            featureMatrix(i, :) = extract_features_comprehensive(allSegments{i});
+            successCount = successCount + 1;
+            
+            % Update progress every 100 segments
+            if mod(i, 100) == 0
+                fprintf('  Processed %d/%d segments (%.1f%%)\n', ...
+                        i, numSegments, (i/numSegments)*100);
+            end
+            
+        catch ME
+            fprintf('ERROR: Failed to extract features from segment %d\n', i);
+            fprintf('Reason: %s\n', ME.message);
+            featureMatrix(i, :) = NaN;  % Mark failed segment
+        end
+    end
+    
+    % --- Check for any failed extractions ---
+    failedRows = any(isnan(featureMatrix), 2);
+    numFailed = sum(failedRows);
+    
+    if numFailed > 0
+        fprintf('\nWARNING: %d segments failed feature extraction\n', numFailed);
+        % Remove failed rows
+        featureMatrix(failedRows, :) = [];
+        allLabels(failedRows) = [];
+        fprintf('Removed failed segments. Remaining: %d\n', size(featureMatrix, 1));
+    end
+    
+    % --- Save results (NO NORMALIZATION - keep raw features) ---
+    fprintf('\nSaving extracted features...\n');
+    outputPath = fullfile(resultsFolder, outputFile);
+    save(outputPath, 'featureMatrix', 'allLabels');
+    
+    % --- Summary ---
+    fprintf('\n--- %s COMPLETE ---\n', configName);
+    fprintf('Segments successfully processed: %d\n', successCount);
+    fprintf('Features per segment: %d\n', numFeatures);
+    fprintf('Feature matrix size: %d × %d\n', size(featureMatrix, 1), size(featureMatrix, 2));
+    fprintf('Saved to: %s\n', outputPath);
+    
+    % --- Display feature distribution per user ---
+    fprintf('\nFeature samples per user:\n');
+    uniqueUsers = unique(allLabels);
+    for u = 1:length(uniqueUsers)
+        userId = uniqueUsers(u);
+        fprintf('  User %2d: %d segments\n', userId, sum(allLabels == userId));
+    end
+end
+
+fprintf('\n==========================================================\n');
+fprintf('ALL FEATURE EXTRACTION COMPLETE\n');
+fprintf('==========================================================\n');
+
+
+% =========================================================================
+% COMPREHENSIVE FEATURE EXTRACTION FUNCTION
+% No Statistics Toolbox required - all functions manually implemented
+% IDENTICAL TO YOUR BASELINE MODEL
+% =========================================================================
+function featVec = extract_features_comprehensive(segment)
+    % Input: segment (table with Time, Accel_X, Accel_Y, Accel_Z, Gyro_X, Gyro_Y, Gyro_Z)
+    % Output: feature vector with time-domain + frequency-domain features
+    
+    % --- Get sensor columns (skip Time column) ---
+    colNames = segment.Properties.VariableNames;
+    sensorCols = colNames(~contains(colNames, 'Time', 'IgnoreCase', true));
+    
+    % Should have 6 sensor columns
+    if length(sensorCols) ~= 6
+        error('Expected 6 sensor columns, found %d', length(sensorCols));
+    end
+    
+    featVec = [];
+    
+    % --- Extract features for each sensor axis ---
+    for i = 1:length(sensorCols)
+        signal = segment.(sensorCols{i});
+        
+        % ===== TIME-DOMAIN FEATURES (17 per axis) =====
+        
+        % 1. Mean
+        featVec(end+1) = mean(signal);
+        
+        % 2. Standard Deviation
+        featVec(end+1) = std(signal);
+        
+        % 3. Variance
+        featVec(end+1) = var(signal);
+        
+        % 4. Maximum
+        featVec(end+1) = max(signal);
+        
+        % 5. Minimum
+        featVec(end+1) = min(signal);
+        
+        % 6. Root Mean Square (RMS)
+        featVec(end+1) = sqrt(mean(signal.^2));
+        
+        % 7. Interquartile Range (IQR) - manual implementation
+        featVec(end+1) = iqr_manual(signal);
+        
+        % 8. Peak-to-Peak Amplitude
+        featVec(end+1) = max(signal) - min(signal);
+        
+        % 9. Signal Energy
+        featVec(end+1) = sum(signal.^2) / length(signal);
+        
+        % 10. Skewness - manual implementation
+        featVec(end+1) = skewness_manual(signal);
+        
+        % 11. Kurtosis - manual implementation
+        featVec(end+1) = kurtosis_manual(signal);
+        
+        % 12. Mean Absolute Deviation (MAD) - manual implementation
+        featVec(end+1) = mean(abs(signal - mean(signal)));
+        
+        % 13. Median
+        featVec(end+1) = median(signal);
+        
+        % 14. Zero Crossing Rate
+        featVec(end+1) = sum(abs(diff(sign(signal)))) / (2 * length(signal));
+        
+        % 15. Crest Factor
+        rms_val = sqrt(mean(signal.^2));
+        if rms_val > 0
+            featVec(end+1) = max(abs(signal)) / rms_val;
+        else
+            featVec(end+1) = 0;
+        end
+        
+        % 16. Upper Quartile (75th percentile)
+        featVec(end+1) = prctile(signal, 75);
+        
+        % 17. Lower Quartile (25th percentile)
+        featVec(end+1) = prctile(signal, 25);
+        
+        
+        % ===== FREQUENCY-DOMAIN FEATURES (4 per axis) =====
+        
+        N = length(signal);
+        Y = fft(signal);
+        P2 = abs(Y/N);
+        P1 = P2(1:floor(N/2)+1);
+        P1(2:end-1) = 2*P1(2:end-1);
+        
+        fs = 31;  % Sampling frequency
+        f = fs * (0:(floor(N/2))) / N;
+        
+        % 18. FFT Peak Frequency
+        [~, maxIdx] = max(P1);
+        featVec(end+1) = f(maxIdx);
+        
+        % 19. FFT Total Energy
+        featVec(end+1) = sum(P1.^2);
+        
+        % 20. Spectral Entropy
+        pNorm = P1 / (sum(P1) + eps);
+        featVec(end+1) = -sum(pNorm .* log2(pNorm + eps));
+        
+        % 21. Spectral Centroid
+        featVec(end+1) = sum(f' .* P1) / (sum(P1) + eps);
+    end
+    
+    
+    % ===== CORRELATION FEATURES (3) =====
+    
+    accel_X = segment.(sensorCols{1});
+    accel_Y = segment.(sensorCols{2});
+    accel_Z = segment.(sensorCols{3});
+    gyro_X = segment.(sensorCols{4});
+    gyro_Y = segment.(sensorCols{5});
+    gyro_Z = segment.(sensorCols{6});
+    
+    accelMag = sqrt(accel_X.^2 + accel_Y.^2 + accel_Z.^2);
+    gyroMag = sqrt(gyro_X.^2 + gyro_Y.^2 + gyro_Z.^2);
+    
+    % 22. Correlation between Accel_X and Accel_Y
+    featVec(end+1) = correlation_manual(accel_X, accel_Y);
+    
+    % 23. Correlation between Gyro_X and Gyro_Y
+    featVec(end+1) = correlation_manual(gyro_X, gyro_Y);
+    
+    % 24. Correlation between Accel magnitude and Gyro magnitude
+    featVec(end+1) = correlation_manual(accelMag, gyroMag);
+    
+    
+    % ===== MAGNITUDE FEATURES (4) =====
+    
+    % 25. Accelerometer magnitude mean
+    featVec(end+1) = mean(accelMag);
+    
+    % 26. Accelerometer magnitude std
+    featVec(end+1) = std(accelMag);
+    
+    % 27. Gyroscope magnitude mean
+    featVec(end+1) = mean(gyroMag);
+    
+    % 28. Gyroscope magnitude std
+    featVec(end+1) = std(gyroMag);
+end
+
+
+% =========================================================================
+% HELPER FUNCTIONS - Manual implementations (no toolbox required)
+% =========================================================================
+
+function iqr_val = iqr_manual(x)
+    % Manual IQR calculation
+    q75 = prctile(x, 75);
+    q25 = prctile(x, 25);
+    iqr_val = q75 - q25;
+end
+
+function skew = skewness_manual(x)
+    % Manual skewness calculation
+    % Skewness = E[(X - mu)^3] / sigma^3
+    n = length(x);
+    mu = mean(x);
+    sigma = std(x);
+    if sigma > 0
+        skew = sum((x - mu).^3) / (n * sigma^3);
+    else
+        skew = 0;
+    end
+end
+
+function kurt = kurtosis_manual(x)
+    % Manual kurtosis calculation
+    % Kurtosis = E[(X - mu)^4] / sigma^4
+    n = length(x);
+    mu = mean(x);
+    sigma = std(x);
+    if sigma > 0
+        kurt = sum((x - mu).^4) / (n * sigma^4);
+    else
+        kurt = 0;
+    end
+end
+
+function r = correlation_manual(x, y)
+    % Manual correlation calculation
+    % r = cov(x,y) / (std(x) * std(y))
+    x = x - mean(x);
+    y = y - mean(y);
+    r = sum(x .* y) / sqrt(sum(x.^2) * sum(y.^2) + eps);
+end
