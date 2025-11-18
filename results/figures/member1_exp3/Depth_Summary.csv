@@ -1,0 +1,4 @@
+Architecture,Mean_EER,Mean_FAR,Mean_FRR,Accuracy,Train_Time
+1-Layer (80),0,0,0,100,1.4441322
+2-Layer (50/30),0,0,0,100,0.9390974
+3-Layer (30/30/20),0,0,0,99.6296296296296,1.2611372
