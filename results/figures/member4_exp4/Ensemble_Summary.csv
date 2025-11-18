@@ -1,0 +1,7 @@
+Model,EER,FAR,FRR,Accuracy
+Model 1,0,0,0,100
+Model 2,0,0,0,99.6296296296296
+Model 3,0,0,0,100
+Model 4,0,0,0,100
+Model 5,0,0,0,99.6296296296296
+Ensemble,0,0,0,99.6296296296296
