@@ -1,0 +1,4 @@
+Method,NumSamples,Accuracy,Mean_EER,Std_EER,Mean_FAR,Mean_FRR
+Non-Overlapping (0%),1349,100,0,0,0,0
+25% Overlap,1786,100,0,0,0,0
+50% Overlap,2698,99.8144712430427,0,0,0,0
