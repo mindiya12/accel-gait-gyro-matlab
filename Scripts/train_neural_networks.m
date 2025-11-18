@@ -10,7 +10,7 @@ fprintf('==========================================================\n');
 
 % Load preprocessed data
 fprintf('\n[STEP 1] Loading preprocessed data...\n');
-load('D:\src\development\accel-gait-gyro-matlab\results\normalized_splits_FINAL.mat');
+load('C:\Users\Welcome\OneDrive - NSBM\Desktop\3rd_year\ai_ml\Corsework\accel-gait-gyro-matlab\results\normalized_splits_FINAL.mat');
 
 fprintf('  Option B loaded: %d train, %d test samples\n', ...
     size(X_train_B_norm, 1), size(X_test_B_norm, 1));
@@ -113,8 +113,8 @@ end
 % SAVE TRAINED MODEL B
 % =========================================================================
 fprintf('\n[STEP 5] Saving trained model for Option B...\n');
-save('D:\src\development\accel-gait-gyro-matlab\results/trained_model_OptionB.mat', ...
-    'net_B', 'tr_B', 'hiddenLayerSize', 'trainFcn');
+%save('D:\src\development\accel-gait-gyro-matlab\results/trained_model_OptionB.mat', ...
+   % 'net_B', 'tr_B', 'hiddenLayerSize', 'trainFcn');
 fprintf('  Saved: trained_model_OptionB.mat\n');
 
 fprintf('\n==========================================================\n');
